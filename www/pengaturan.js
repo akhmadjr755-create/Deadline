@@ -112,6 +112,14 @@ function setupPengaturanButtons() {
             await saveDefaultReminders();
         });
     }
+
+    // TAMBAHKAN BARIS INI:
+    var btnTest = document.getElementById("btn-test-notif");
+    if (btnTest) {
+        btnTest.addEventListener("click", function() {
+            if (typeof testNotifikasi === "function") testNotifikasi();
+        });
+    }
 }
 
 // ==========================================

@@ -219,9 +219,12 @@ async function _scheduleNative(items) {
             id: n.id,
             title: n.title,
             body: n.body,
-            schedule: { at: new Date(n.triggerMs) },
-            smallIcon: "res://ic_stat_icon",
+            schedule: { 
+                at: new Date(n.triggerMs),
+                allowWhileIdle: true // Wajib: biar notif nembus mode hemat daya
+            },
             iconColor: "#3B82F6"
+            // gua hapus smallIcon karena bikin crash di Android
         };
     });
     try {
@@ -232,7 +235,6 @@ async function _scheduleNative(items) {
         showToast("Gagal menjadwalkan pengingat.", "error");
     }
 }
-
 // ==========================================
 // SCHEDULE — WEB (browser dev)
 // ==========================================
@@ -291,6 +293,35 @@ async function previewJadwalNotifikasi(tugas) {
         return new Date(a.waktu_trigger) - new Date(b.waktu_trigger);
     });
     return out;
+}
+
+// ==========================================
+// TEST NOTIFIKASI (5 detik ke depan)
+// ==========================================
+async function testNotifikasi() {
+    if (!_isCapacitorNative()) {
+        showToast("Tes notifikasi hanya berjalan di aplikasi Android.", "info");
+        return;
+    }
+    var ok = await ensureNotifPermission();
+    if (!ok) {
+        showToast("Izin ditolak. Buka Pengaturan HP > Aplikasi > Deadline > Notifikasi.", "error");
+        return;
+    }
+    var LN = _getLocalNotifications();
+    try {
+        await LN.schedule({
+            notifications: [{
+                id: 9999,
+                title: "Tes Notifikasi",
+                body: "Berhasil! Notifikasi Deadline berfungsi.",
+                schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }
+            }]
+        });
+        showToast("Notif dites dalam 5 detik. Kunci HP sekarang!", "success");
+    } catch (e) {
+        showToast("Gagal tes: " + e.message, "error");
+    }
 }
 
 console.log("[Deadline] notifikasi.js loaded");
