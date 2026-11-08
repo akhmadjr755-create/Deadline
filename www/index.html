@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#3B82F6">
+    <title>Deadline — Pengingat Tugas Kuliah</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================================
+     APP SHELL
+     ============================================ -->
+<div class="app">
+
+    <!-- ============ HEADER ============ -->
+    <header class="app-bar">
+        <div class="app-brand">
+            <span class="brand-icon">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 11l3 3L22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+            </span>
+            <span class="brand-name">Deadline</span>
+        </div>
+
+        <!-- Nav desktop -->
+        <nav class="nav-desktop">
+            <button class="nav-pill active" data-page="tugas">Tugas</button>
+            <button class="nav-pill" data-page="matkul">Mata Kuliah</button>
+            <button class="nav-pill" data-page="pengaturan">Pengaturan</button>
+        </nav>
+
+        <button class="btn-icon" id="btn-tambah-header" aria-label="Tambah">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="main" id="main">
+
+        <!-- ============ PAGE: TUGAS ============ -->
+        <section class="page active" id="page-tugas">
+            <div class="page-head">
+                <div>
+                    <h1 class="page-title" id="tugas-title">Hari ini</h1>
+                    <p class="page-sub" id="tugas-sub">—</p>
+                </div>
+            </div>
+
+            <div class="filter-row" id="filter-row">
+                <button class="filter-chip active" data-filter="semua">Semua</button>
+                <button class="filter-chip" data-filter="hari">Hari Ini</button>
+                <button class="filter-chip" data-filter="minggu">Minggu Ini</button>
+                <button class="filter-chip" data-filter="terlambat">Terlambat</button>
+                <button class="filter-chip" data-filter="selesai">Selesai</button>
+            </div>
+
+            <div id="task-list" class="task-list"></div>
+
+            <div id="task-empty" class="empty-state" hidden>
+                <div class="empty-illustration">
+                    <svg viewBox="0 0 120 120" width="96" height="96" fill="none">
+                        <circle cx="60" cy="60" r="52" fill="#DBEAFE"/>
+                        <rect x="38" y="42" width="44" height="52" rx="6" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2.5"/>
+                        <path d="M48 56h24M48 66h24M48 76h16" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="60" cy="30" r="12" fill="#FBBF24"/>
+                        <path d="M56 30l3 3 5-6" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h2 class="empty-title">Belum ada tugas di sini</h2>
+                <p class="empty-desc">Yuk, catat tugas pertamamu — cukup 30 detik.</p>
+                <button class="btn btn-primary" id="btn-empty-add">+ Tambah Tugas</button>
+            </div>
+        </section>
+
+        <!-- ============ PAGE: MATKUL ============ -->
+        <section class="page" id="page-matkul">
+            <div class="page-head">
+                <div>
+                    <h1 class="page-title">Mata Kuliah</h1>
+                    <p class="page-sub">Setiap mata kuliah punya warna untuk membedakan tugasnya.</p>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-tambah-matkul">+ Tambah</button>
+            </div>
+
+            <div id="matkul-list" class="matkul-list"></div>
+
+            <div id="matkul-empty" class="empty-state" hidden>
+                <div class="empty-illustration">
+                    <svg viewBox="0 0 120 120" width="96" height="96" fill="none">
+                        <circle cx="60" cy="60" r="52" fill="#FEF3C7"/>
+                        <rect x="36" y="40" width="48" height="56" rx="6" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"/>
+                        <path d="M36 52h48" stroke="#D97706" stroke-width="2.5"/>
+                        <circle cx="48" cy="40" r="6" fill="#FBBF24"/>
+                        <circle cx="72" cy="40" r="6" fill="#FBBF24"/>
+                    </svg>
+                </div>
+                <h2 class="empty-title">Belum ada mata kuliah</h2>
+                <p class="empty-desc">Tambahkan dulu supaya tugas-tugasmu lebih rapi.</p>
+                <button class="btn btn-primary" id="btn-empty-matkul">+ Tambah Mata Kuliah</button>
+            </div>
+        </section>
+
+        <!-- ============ PAGE: PENGATURAN ============ -->
+        <section class="page" id="page-pengaturan">
+            <div class="page-head">
+                <div>
+                    <h1 class="page-title">Pengaturan</h1>
+                    <p class="page-sub">Atur pengingat dan cadangkan data.</p>
+                </div>
+            </div>
+
+            <!-- Pengingat Default -->
+            <div class="card">
+                <div class="card-head">
+                    <h2 class="card-title">Pengingat Default</h2>
+                    <p class="card-desc">Pengingat ini dipakai untuk semua tugas baru, kecuali kamu atur khusus.</p>
+                </div>
+                <div id="reminder-default-rows" class="reminder-list"></div>
+                <button class="btn btn-ghost btn-block mt-8" id="btn-tambah-reminder-default">
+                    + Tambah Pengingat
+                </button>
+            </div>
+
+            <!-- Backup -->
+            <div class="card">
+                <div class="card-head">
+                    <h2 class="card-title">Cadangan Data</h2>
+                    <p class="card-desc">Data tersimpan di HP-mu. Kalau aplikasi dihapus, data bisa hilang — jadi rutin cadangkan.</p>
+                </div>
+                <button class="btn btn-secondary btn-block" id="btn-export">
+                    Simpan Cadangan (.json)
+                </button>
+                <button class="btn btn-secondary btn-block" id="btn-import">
+                    Pulihkan dari Cadangan
+                </button>
+                <input type="file" id="file-import" accept=".json,application/json" hidden>
+            </div>
+
+            <!-- Tentang -->
+            <div class="card">
+                <div class="card-head">
+                    <h2 class="card-title">Tentang</h2>
+                </div>
+                <div class="about-row">
+                    <span>Aplikasi</span>
+                    <span class="mono">Deadline</span>
+                </div>
+                <div class="about-row">
+                    <span>Versi</span>
+                    <span class="mono">1.0</span>
+                </div>
+                <div class="about-row">
+                    <span>Data tersimpan di</span>
+                    <span class="mono" id="storage-info">—</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ FAB (mobile + desktop) ============ -->
+    <button class="fab" id="btn-fab" aria-label="Tambah tugas">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+
+    <!-- ============ BOTTOM NAV (mobile only) ============ -->
+    <nav class="bottom-nav">
+        <button class="bn-item active" data-page="tugas">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <span>Tugas</span>
+        </button>
+        <button class="bn-item" data-page="matkul">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+            <span>Matkul</span>
+        </button>
+        <button class="bn-item" data-page="pengaturan">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span>Pengaturan</span>
+        </button>
+    </nav>
+
+</div>
+
+<!-- ============================================
+     MODAL: TUGAS
+     ============================================ -->
+<div class="modal-overlay" id="modal-tugas" hidden>
+    <div class="modal">
+        <div class="modal-head">
+            <h2 class="modal-title" id="modal-tugas-title">Tugas Baru</h2>
+            <button class="btn-close" data-close="modal-tugas" aria-label="Tutup">×</button>
+        </div>
+
+        <input type="hidden" id="tugas-id">
+
+        <label class="field-label">Nama Tugas</label>
+        <input type="text" id="tugas-nama" class="input-field" placeholder="cth: Laporan Praktikum Bab 3" autocomplete="off">
+
+        <label class="field-label">Mata Kuliah</label>
+        <div class="field-with-action">
+            <select id="tugas-matkul" class="input-field">
+                <option value="">— Pilih mata kuliah —</option>
+            </select>
+            <button class="btn-icon-soft" id="btn-quick-matkul" type="button" title="Mata kuliah baru">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+        </div>
+
+        <label class="field-label">Deadline</label>
+        <input type="datetime-local" id="tugas-deadline" class="input-field">
+
+        <label class="field-label">Catatan / Link <span class="field-hint">(opsional)</span></label>
+        <textarea id="tugas-catatan" class="input-field input-textarea" rows="2" placeholder="cth: https://meet.google.com/..."></textarea>
+
+        <!-- Reminder override -->
+        <div class="reminder-section">
+            <div class="reminder-header">
+                <span class="reminder-title">Pengingat</span>
+                <span class="reminder-sub" id="reminder-summary">Mengikuti default</span>
+            </div>
+            <label class="radio-row">
+                <input type="radio" name="reminder-mode" value="default" checked>
+                <span>Ikuti pengaturan default</span>
+            </label>
+            <label class="radio-row">
+                <input type="radio" name="reminder-mode" value="custom">
+                <span>Atur sendiri untuk tugas ini</span>
+            </label>
+            <div class="reminder-custom" id="reminder-custom-wrap" hidden>
+                <div id="reminder-override-rows" class="reminder-list"></div>
+                <button class="btn btn-ghost btn-sm mt-4" id="btn-tambah-reminder-override" type="button">+ Tambah baris</button>
+            </div>
+        </div>
+
+        <p class="form-error" id="tugas-error" hidden></p>
+
+        <div class="modal-actions">
+            <button class="btn btn-ghost" data-close="modal-tugas">Batal</button>
+            <button class="btn btn-primary" id="btn-save-tugas">Simpan</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================
+     MODAL: MATKUL
+     ============================================ -->
+<div class="modal-overlay" id="modal-matkul" hidden>
+    <div class="modal">
+        <div class="modal-head">
+            <h2 class="modal-title" id="modal-matkul-title">Mata Kuliah Baru</h2>
+            <button class="btn-close" data-close="modal-matkul" aria-label="Tutup">×</button>
+        </div>
+
+        <input type="hidden" id="matkul-id">
+
+        <label class="field-label">Nama Mata Kuliah</label>
+        <input type="text" id="matkul-nama" class="input-field" placeholder="cth: Pemrograman Web" autocomplete="off">
+
+        <label class="field-label">Warna Identitas</label>
+        <div class="color-picker" id="color-picker">
+            <!-- diisi JS -->
+        </div>
+
+        <p class="form-error" id="matkul-error" hidden></p>
+
+        <div class="modal-actions">
+            <button class="btn btn-ghost" data-close="modal-matkul">Batal</button>
+            <button class="btn btn-primary" id="btn-save-matkul">Simpan</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================
+     TOAST & SCRIPTS
+     ============================================ -->
+<div class="toast" id="toast"></div>
+
+<script src="utils.js"></script>
+<script src="db.js"></script>
+<script src="notifikasi.js"></script>
+<script src="matkul.js"></script>
+<script src="tugas.js"></script>
+<script src="pengaturan.js"></script>
+<script src="backup.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

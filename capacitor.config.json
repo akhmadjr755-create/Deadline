@@ -1,0 +1,11 @@
+{
+  "appId": "id.jeffririzqi.deadline",
+  "appName": "Deadline",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
