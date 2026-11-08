@@ -62,6 +62,16 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Redirect Gradle Download to Fast Mirror
+        run: |
+          WRAPPER_FILE="android/gradle/wrapper/gradle-wrapper.properties"
+          echo "Mengubah distributionUrl ke mirror Tencent..."
+          sed -i 's|https\\://services.gradle.org/distributions/|https\\://mirrors.cloud.tencent.com/gradle/|g' $WRAPPER_FILE
+          # Naikkan batas timeout jadi 60 detik (jaga-jaga)
+          sed -i 's|networkTimeout=10000|networkTimeout=60000|g' $WRAPPER_FILE
+          echo "--- Isi file wrapper setelah diubah ---"
+          cat $WRAPPER_FILE
+
       - name: Patch AndroidManifest for Notifications
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
