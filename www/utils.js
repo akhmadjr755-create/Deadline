@@ -168,10 +168,45 @@ function debounce(fn, wait) {
 }
 
 // --- Konfirmasi (pakai native confirm untuk MVP) ---
-function konfirmasi(msg) {
-    return window.confirm(msg);
-}
+function konfirmasi(msg, title = "Konfirmasi") {
+    return new Promise((resolve) => {
+        const existing = document.getElementById('custom-confirm');
+        if (existing) existing.remove();
 
+        const overlay = document.createElement('div');
+        overlay.id = 'custom-confirm';
+        overlay.className = 'modal-overlay custom-confirm-overlay';
+        
+        overlay.innerHTML = `
+            <div class="modal confirm-dialog">
+                <h3 class="modal-title" style="margin-bottom:8px; font-size:18px;">${escapeHtml(title)}</h3>
+                <p style="color:var(--text-muted); font-size:15px; line-height:1.5; margin-bottom:24px;">${escapeHtml(msg).replace(/\n/g, '<br>')}</p>
+                <div class="modal-actions">
+                    <button class="btn btn-ghost" id="btn-cancel-confirm">Batal</button>
+                    <button class="btn btn-primary" id="btn-ok-confirm" style="background:var(--error); color:white; border-color:var(--error)">Ya, Lanjutkan</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.classList.add('modal-open');
+
+        requestAnimationFrame(() => { overlay.classList.add('show'); });
+
+        const close = (result) => {
+            overlay.classList.remove('show');
+            setTimeout(() => {
+                overlay.remove();
+                const otherModals = document.querySelectorAll('.modal-overlay.show');
+                if (otherModals.length === 0) document.body.classList.remove('modal-open');
+                resolve(result);
+            }, 300);
+        };
+
+        overlay.querySelector('#btn-cancel-confirm').addEventListener('click', () => close(false));
+        overlay.querySelector('#btn-ok-confirm').addEventListener('click', () => close(true));
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+    });
+}
 /**
  * Hash string ke 32-bit integer positif. Untuk Capacitor LocalNotifications
  * yang butuh numeric ID. Deterministik: string sama → ID sama.

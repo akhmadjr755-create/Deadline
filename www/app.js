@@ -119,16 +119,20 @@ function openModal(id) {
     var m = document.getElementById(id);
     if (!m) return;
     m.hidden = false;
+    void m.offsetWidth; // trigger reflow
+    m.classList.add("show");
     document.body.classList.add("modal-open");
 }
 
 function closeModal(id) {
     var m = document.getElementById(id);
     if (!m) return;
-    m.hidden = true;
-    // Hanya hapus modal-open kalau tidak ada modal lain yang masih terbuka
-    var masihTerbuka = document.querySelector(".modal-overlay:not([hidden])");
-    if (!masihTerbuka) document.body.classList.remove("modal-open");
+    m.classList.remove("show");
+    setTimeout(function () {
+        m.hidden = true;
+        var masihTerbuka = document.querySelector(".modal-overlay.show");
+        if (!masihTerbuka) document.body.classList.remove("modal-open");
+    }, 300); // Samain sama durasi animasi CSS (0.3s)
 }
 
 function setupModals() {
@@ -226,7 +230,7 @@ window.DeadlineDebug = {
         return await exportAllData();
     },
     resetAll: async function () {
-        if (!konfirmasi("Hapus SEMUA data Deadline? (matkul, tugas, pengaturan)")) return;
+        if (!await konfirmasi("Hapus SEMUA data Deadline? (matkul, tugas, pengaturan)", "Reset Total")) return;
         await importAllData({
             version: 1, exported_at: getNowISO(), app: "Deadline",
             data: { matkul: [], tugas: [], pengaturan: { default_reminders: [{ satuan: "hari", nilai: 1 }, { satuan: "jam", nilai: 2 }] } }

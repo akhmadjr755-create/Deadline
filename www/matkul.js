@@ -4,14 +4,12 @@
 
 // Palet warna dari Skylearn + turunannya (mudah dibedakan)
 var WARNA_PALETTE = [
-    "#3B82F6", // Sky
-    "#22C55E", // Leaf
-    "#FBBF24", // Sun
-    "#F87171", // Coral
-    "#A855F7", // Berry
-    "#06B6D4", // Cyan
-    "#EC4899", // Pink
-    "#F97316"  // Orange
+    "#D4A373", // Sand (Default)
+    "#0891B2", // Ocean
+    "#166534", // Forest
+    "#E07A5F", // Sunset
+    "#9D4EDD", // Berry
+    "#475569"  // Slate
 ];
 
 var MatkulState = {
@@ -242,7 +240,7 @@ async function confirmDeleteMatkul(id) {
         return;
     }
 
-    if (!konfirmasi("Hapus mata kuliah \"" + m.nama + "\"?")) return;
+    if (!await konfirmasi("Hapus mata kuliah \"" + m.nama + "\"?", "Hapus Matkul")) return;
 
     try {
         await deleteMatkul(id);

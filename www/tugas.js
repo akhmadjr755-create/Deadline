@@ -588,7 +588,7 @@ async function confirmDeleteTugas(id) {
     var t = TugasState.list.find(function (x) { return x.id === id; });
     if (!t) return;
 
-    if (!konfirmasi('Hapus tugas "' + t.nama + '"?\n\nPengingat yang terjadwal akan dibatalkan.')) return;
+    if (!await konfirmasi('Hapus tugas "' + t.nama + '"?\n\nPengingat yang terjadwal akan dibatalkan.', "Hapus Tugas")) return;
 
     try {
         await batalkanNotifikasiTugas(id);
