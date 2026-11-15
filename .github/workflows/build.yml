@@ -9,10 +9,10 @@ jobs:
   build:
     name: Build Debug APK
     runs-on: ubuntu-latest
-        
-        # TAMBAHKAN 2 BARIS INI
-        permissions:
-          contents: write
+    
+    # INI KUNCI UTAMANYA: Kasih izin tulis
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -42,22 +42,16 @@ jobs:
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
-          echo "--- sdkmanager location ---"
-          which sdkmanager || find /usr/local/lib/android/sdk -name sdkmanager -type f 2>/dev/null | head -5
 
       - name: Accept ALL Android SDK licenses (non-interactive)
         run: |
           set +o pipefail
           yes 2>/dev/null | sdkmanager --licenses > /dev/null 2>&1 || true
-          echo "License accepted (exit code ignored — might be SIGPIPE from yes)"
           sdkmanager --licenses < /dev/null > /dev/null 2>&1 || true
 
       - name: Install required SDK components
         run: |
           sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-          echo "--- Installed ---"
-          ls /usr/local/lib/android/sdk/platforms/
-          ls /usr/local/lib/android/sdk/build-tools/
 
       - name: Install npm dependencies
         run: npm install --no-audit --no-fund
@@ -73,7 +67,6 @@ jobs:
           sed -i '/<application/i\    <uses-permission android:name="android.permission.WAKE_LOCK" />' $MANIFEST
           sed -i '/<application/i\    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
           sed -i '/<application/i\    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />' $MANIFEST
-          echo "Patch berhasil diterapkan."
 
       - name: Sync web assets to Android
         run: npx cap sync android
