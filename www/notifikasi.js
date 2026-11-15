@@ -1,51 +1,23 @@
-// ==========================================
-// notifikasi.js — Scheduler (Capacitor + Web fallback)
-// ==========================================
-// PRD §5.3 & §9:
-//   - Notifikasi dijadwalkan lewat OS (Capacitor Local Notifications)
-//   - ID deterministik: {tugas_id}_{index} di-hash ke numeric
-//   - Saat selesai → cancel semua notifikasi tugas itu
-//   - Saat undo → hanya schedule ulang yang masih future
-// ==========================================
-// Catatan implementasi:
-//   - Stateless: tidak persist tabel notifikasi_terjadwal.
-//     Cancel = coba cancel ID 0..MAX_REMINDER_INDEX.
-//     Schedule = hitung ulang dari tugas + reminder.
-//   - Browser fallback pakai Web Notification + setTimeout
-//     (tab harus terbuka saat trigger, untuk dev).
-// ==========================================
-
 var NotifState = {
-    permission: "unknown", // "granted" | "denied" | "unknown" | "default"
-    webTimeouts: {}, // notifId -> timerId (browser)
+    permission: "unknown",
+    webTimeouts: {},
     inited: false
 };
 
-var MAX_REMINDER_INDEX = 20; // batas atas index reminder (untuk cancel)
+var MAX_REMINDER_INDEX = 20;
 
-// ==========================================
-// PLATFORM HELPERS
-// ==========================================
 function _isCapacitorNative() {
-    return typeof window !== "undefined" &&
-        window.Capacitor &&
-        typeof window.Capacitor.isNativePlatform === "function" &&
-        window.Capacitor.isNativePlatform();
+    return typeof window !== "undefined" && window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform();
 }
 
 function _getLocalNotifications() {
-    if (!_isCapacitorNative()) return null;
-    if (!window.Capacitor.Plugins) return null;
+    if (!_isCapacitorNative() || !window.Capacitor.Plugins) return null;
     return window.Capacitor.Plugins.LocalNotifications || null;
 }
 
-// ==========================================
-// INIT (dipanggil dari app.js saat boot)
-// ==========================================
 async function initNotifikasi() {
     if (NotifState.inited) return;
     NotifState.inited = true;
-
     if (_isCapacitorNative()) {
         try {
             var LN = _getLocalNotifications();
@@ -53,143 +25,74 @@ async function initNotifikasi() {
                 var perm = await LN.checkPermissions();
                 NotifState.permission = (perm.display === "granted") ? "granted" : "unknown";
             }
-        } catch (e) {
-            console.warn("[Deadline] LocalNotif.checkPermissions gagal:", e);
-        }
+        } catch (e) {}
     } else if (typeof Notification !== "undefined") {
-        NotifState.permission = Notification.permission; // "default" | "granted" | "denied"
-    } else {
-        NotifState.permission = "denied";
+        NotifState.permission = Notification.permission;
     }
-    console.log("[Deadline] Notifikasi init. Permission:", NotifState.permission);
 }
 
 async function ensureNotifPermission() {
     if (NotifState.permission === "granted") return true;
-
     if (_isCapacitorNative()) {
         try {
             var LN = _getLocalNotifications();
             if (!LN) return false;
             var res = await LN.requestPermissions();
-            if (res.display === "granted") {
-                NotifState.permission = "granted";
-                return true;
-            }
-            NotifState.permission = "denied";
+            if (res.display === "granted") { NotifState.permission = "granted"; return true; }
             return false;
-        } catch (e) {
-            console.warn("[Deadline] requestPermissions gagal:", e);
-            return false;
-        }
+        } catch (e) { return false; }
     } else if (typeof Notification !== "undefined") {
         try {
             var p = await Notification.requestPermission();
             NotifState.permission = p;
             return p === "granted";
-        } catch (e) {
-            return false;
-        }
+        } catch (e) { return false; }
     }
     return false;
 }
 
-// ==========================================
-// REMINDER LOOKUP
-// ==========================================
 async function getRemindersForTugas(tugas) {
-    // Override ada dan valid → pakai itu
+    if (tugas.reminder_mode === 'NONE') return [];
     if (Array.isArray(tugas.reminder_override)) {
-        return tugas.reminder_override
-            .filter(function (r) { return r && r.satuan && Number(r.nilai) > 0; })
-            .map(function (r) { return { satuan: r.satuan, nilai: Number(r.nilai) }; });
+        return tugas.reminder_override.filter(r => r && r.satuan && Number(r.nilai) > 0);
     }
-    // Fallback ke default
     var pengaturan = await getPengaturan();
     if (pengaturan && Array.isArray(pengaturan.default_reminders)) {
-        return pengaturan.default_reminders
-            .filter(function (r) { return r && r.satuan && Number(r.nilai) > 0; });
+        return pengaturan.default_reminders.filter(r => r && r.satuan && Number(r.nilai) > 0);
     }
     return [];
 }
 
-// ==========================================
-// CANCEL — batalkan semua notifikasi untuk tugas
-// ==========================================
 async function batalkanNotifikasiTugas(tugasId) {
     var ids = [];
-    for (var i = 0; i < MAX_REMINDER_INDEX; i++) {
-        ids.push(notifIdFor(tugasId, i));
-    }
-
-    // Browser: clear semua setTimeout
+    for (var i = 0; i < MAX_REMINDER_INDEX; i++) ids.push(notifIdFor(tugasId, i));
     if (!_isCapacitorNative()) {
-        ids.forEach(function (id) {
-            if (NotifState.webTimeouts[id]) {
-                clearTimeout(NotifState.webTimeouts[id]);
-                delete NotifState.webTimeouts[id];
-            }
-        });
+        ids.forEach(id => { if (NotifState.webTimeouts[id]) { clearTimeout(NotifState.webTimeouts[id]); delete NotifState.webTimeouts[id]; } });
         return;
     }
-
-    // Capacitor: minta OS cancel
     var LN = _getLocalNotifications();
-    if (!LN) return;
-    try {
-        await LN.cancel({
-            notifications: ids.map(function (id) { return { id: id }; })
-        });
-    } catch (e) {
-        // Beberapa versi plugin lempar error kalau ID tidak ditemukan — abaikan
-        console.warn("[Deadline] cancel notif (mungkin kosong):", e && e.message);
+    if (LN) {
+        try { await LN.cancel({ notifications: ids.map(id => ({ id })) }); } catch (e) {}
     }
 }
 
-// ==========================================
-// SYNC — jadwalkan ulang notifikasi untuk satu tugas
-// ==========================================
-/**
- * Dipanggil pada: create tugas, edit tugas, toggle status_selesai.
- * Urutan:
- *   1. Cancel semua notifikasi lama untuk tugas ini
- *   2. Kalau sudah selesai → stop
- *   3. Hitung reminder (override atau default)
- *   4. Schedule yang waktu_trigger-nya masih future
- */
 async function syncNotifikasiTugas(tugas) {
-    // 1. Cancel dulu (idempotent)
     await batalkanNotifikasiTugas(tugas.id);
-
-    // 2. Sudah selesai → jangan schedule
-    if (tugas.status_selesai) return;
-
-    // 3. Deadline harus valid
-    if (!tugas.deadline) return;
+    if (tugas.status_selesai || tugas.reminder_mode === 'NONE') return;
     var deadlineMs = new Date(tugas.deadline).getTime();
     if (isNaN(deadlineMs)) return;
-
-    // 4. Reminder list
     var reminders = await getRemindersForTugas(tugas);
     if (reminders.length === 0) return;
-
-    // 5. Matkul (untuk body)
     var matkul = await getMatkulById(tugas.mata_kuliah_id);
-    var matkulName = matkul && matkul.nama ? matkul.nama : "Tanpa Mata Kuliah";
-
-    // 6. Permission? (lazy — hanya minta kalau benar-benar mau schedule)
+    var matkulName = matkul ? matkul.nama : "Tanpa Matkul";
     var ok = await ensureNotifPermission();
-    if (!ok) {
-        console.warn("[Deadline] Izin notifikasi belum diberikan — reminder tidak dijadwalkan.");
-        return;
-    }
+    if (!ok) return;
 
-    // 7. Build payload
     var now = Date.now();
     var toSchedule = [];
     reminders.forEach(function (r, index) {
         var triggerMs = deadlineMs - offsetToMs(r.satuan, r.nilai);
-        if (triggerMs <= now) return; // skip yang sudah lewat
+        if (triggerMs <= now) return;
         toSchedule.push({
             id: notifIdFor(tugas.id, index),
             title: "Pengingat: " + tugas.nama,
@@ -197,131 +100,106 @@ async function syncNotifikasiTugas(tugas) {
             triggerMs: triggerMs
         });
     });
-
     if (toSchedule.length === 0) return;
+    if (_isCapacitorNative()) await _scheduleNative(toSchedule);
+    else _scheduleWeb(toSchedule);
+}
 
-    // 8. Dispatch ke platform
+// ==========================================
+// RANGKUMAN PAGI
+// ==========================================
+async function scheduleDailySummary() {
+    var p = await getPengaturan();
+    if (!p || !p.daily_summary_enabled || !p.daily_summary_time) return;
+
+    var timeParts = p.daily_summary_time.split(":");
+    var h = parseInt(timeParts[0], 10);
+    var m = parseInt(timeParts[1], 10);
+
+    var now = new Date();
+    var target = new Date();
+    target.setHours(h, m, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+
+    var tugas = await getTugas();
+    var besok = new Date(target);
+    besok.setDate(besok.getDate() + 1);
+    
+    var countToday = 0, countBesok = 0;
+    tugas.forEach(t => {
+        if (t.status_selesai) return;
+        var dl = new Date(t.deadline);
+        if (dl >= now && dl <= target) countToday++;
+        if (dl > target && dl <= besok) countBesok++;
+    });
+
+    var msg = "Hari ini: " + countToday + " deadline. Besok: " + countBesok + " deadline.";
+    var ok = await ensureNotifPermission();
+    if (!ok) return;
+
     if (_isCapacitorNative()) {
-        await _scheduleNative(toSchedule);
+        var LN = _getLocalNotifications();
+        if (LN) {
+            await LN.schedule({
+                notifications: [{
+                    id: 99999, // ID statis buat summary
+                    title: "☀️ Rangkuman Pagi",
+                    body: msg,
+                    schedule: { at: target, allowWhileIdle: true },
+                    channelId: 'deadline_reminder'
+                }]
+            });
+        }
     } else {
-        _scheduleWeb(toSchedule);
+        var delay = target.getTime() - now.getTime();
+        if (delay > 0 && delay < 2147483647) {
+            setTimeout(() => {
+                if (Notification.permission === "granted") new Notification("☀️ Rangkuman Pagi", { body: msg });
+            }, delay);
+        }
     }
 }
 
 // ==========================================
-// SCHEDULE — NATIVE (Capacitor)
+// SCHEDULER CORE
 // ==========================================
 async function _scheduleNative(items) {
     var LN = _getLocalNotifications();
     if (!LN) return;
     var payload = items.map(function (n) {
         return {
-            id: n.id,
-            title: n.title,
-            body: n.body,
-            schedule: { 
-                at: new Date(n.triggerMs),
-                allowWhileIdle: true // Wajib: biar notif nembus mode hemat daya
-            },
-            iconColor: "#3B82F6"
-            // gua hapus smallIcon karena bikin crash di Android
+            id: n.id, title: n.title, body: n.body,
+            schedule: { at: new Date(n.triggerMs), allowWhileIdle: true },
+            channelId: 'deadline_reminder'
         };
     });
-    try {
-        await LN.schedule({ notifications: payload });
-        console.log("[Deadline] Native notif terjadwal:", payload.length);
-    } catch (e) {
-        console.error("[Deadline] schedule native gagal:", e);
-        showToast("Gagal menjadwalkan pengingat.", "error");
-    }
+    try { await LN.schedule({ notifications: payload }); } catch (e) { console.error(e); }
 }
-// ==========================================
-// SCHEDULE — WEB (browser dev)
-// ==========================================
+
 function _scheduleWeb(items) {
     items.forEach(function (n) {
         var delay = n.triggerMs - Date.now();
-        if (delay <= 0) return;
-        // Batas setTimeout ~24.8 hari — kalau lebih, abaikan di web
-        if (delay > 2147483647) {
-            console.warn("[Deadline] Reminder terlalu jauh untuk setTimeout web, skip:", n.id);
-            return;
-        }
+        if (delay <= 0 || delay > 2147483647) return;
         var timer = setTimeout(function () {
-            _fireWebNotification(n);
+            try { if (Notification.permission === "granted") new Notification(n.title, { body: n.body }); } catch (e) {}
+            showToast(n.title + " — " + n.body, "info");
             delete NotifState.webTimeouts[n.id];
         }, delay);
         NotifState.webTimeouts[n.id] = timer;
     });
-    console.log("[Deadline] Web notif terjadwal:", Object.keys(NotifState.webTimeouts).length);
 }
 
-function _fireWebNotification(n) {
-    try {
-        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            new Notification(n.title, { body: n.body });
-        }
-    } catch (e) { /* ignore */ }
-    // Fallback: toast kalau tab sedang terbuka
-    showToast(n.title + " — " + n.body, "info");
-}
-
-// ==========================================
-// HELPER — untuk UI preview
-// ==========================================
-/**
- * Kembalikan daftar { waktu_trigger, ms } untuk ditampilkan di modal tugas.
- * Hanya yang future.
- */
-async function previewJadwalNotifikasi(tugas) {
-    if (!tugas.deadline) return [];
-    var deadlineMs = new Date(tugas.deadline).getTime();
-    if (isNaN(deadlineMs)) return [];
-    var reminders = await getRemindersForTugas(tugas);
-    var now = Date.now();
-    var out = [];
-    reminders.forEach(function (r, index) {
-        var triggerMs = deadlineMs - offsetToMs(r.satuan, r.nilai);
-        if (triggerMs <= now) return;
-        out.push({
-            index: index,
-            waktu_trigger: new Date(triggerMs).toISOString(),
-            offset: r
-        });
-    });
-    out.sort(function (a, b) {
-        return new Date(a.waktu_trigger) - new Date(b.waktu_trigger);
-    });
-    return out;
-}
-
-// ==========================================
-// TEST NOTIFIKASI (5 detik ke depan)
-// ==========================================
 async function testNotifikasi() {
-    if (!_isCapacitorNative()) {
-        showToast("Tes notifikasi hanya berjalan di aplikasi Android.", "info");
-        return;
-    }
+    if (!_isCapacitorNative()) { showToast("Tes notif hanya di APK.", "info"); return; }
     var ok = await ensureNotifPermission();
-    if (!ok) {
-        showToast("Izin ditolak. Buka Pengaturan HP > Aplikasi > Deadline > Notifikasi.", "error");
-        return;
-    }
+    if (!ok) return;
     var LN = _getLocalNotifications();
-    try {
-        await LN.schedule({
-            notifications: [{
-                id: 9999,
-                title: "Tes Notifikasi",
-                body: "Berhasil! Notifikasi Deadline berfungsi.",
-                schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }
-            }]
-        });
-        showToast("Notif dites dalam 5 detik. Kunci HP sekarang!", "success");
-    } catch (e) {
-        showToast("Gagal tes: " + e.message, "error");
-    }
+    await LN.schedule({
+        notifications: [{
+            id: 9999, title: "Tes Notifikasi", body: "Berhasil!",
+            schedule: { at: new Date(Date.now() + 5000) }
+        }]
+    });
+    showToast("Notif dites dalam 5 detik.", "success");
 }
-
 console.log("[Deadline] notifikasi.js loaded");

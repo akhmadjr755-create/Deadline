@@ -3,47 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#FFFDF7">
+    <meta name="theme-color" content="#fafaf5">
     <title>Deadline — Pengingat Tugas Kuliah</title>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="app">
-    <!-- ============ HEADER ============ -->
     <header class="app-bar">
         <div class="app-brand">
             <span class="brand-icon">📅</span>
             <span class="brand-name">Deadline</span>
         </div>
-
-        <!-- Nav desktop -->
         <nav class="nav-desktop">
             <button class="nav-pill active" data-page="tugas">Tugas</button>
             <button class="nav-pill" data-page="matkul">Mata Kuliah</button>
             <button class="nav-pill" data-page="pengaturan">Pengaturan</button>
         </nav>
-
-        <button class="btn-icon" id="btn-tambah-header" aria-label="Tambah">
+        <button class="btn-icon" id="btn-tambah-header">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span class="btn-text-desktop">Tugas Baru</span>
         </button>
     </header>
 
-    <!-- ============ MAIN CONTENT ============ -->
     <main class="main" id="main">
-        <!-- ============ PAGE: TUGAS ============ -->
         <section class="page active" id="page-tugas">
             <div class="page-head">
                 <div>
-                    <h1 class="page-title" id="tugas-title">Hari ini</h1>
+                    <h1 class="page-title" id="tugas-title">Tugas</h1>
                     <p class="page-sub" id="tugas-sub">—</p>
                 </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary btn-sm" id="btn-view-list">List</button>
+                    <button class="btn btn-secondary btn-sm" id="btn-view-cal">Kalender</button>
+                </div>
+            </div>
+
+            <div class="search-sort-bar">
+                <input type="text" id="search-input" class="input-field" placeholder="Cari tugas...">
+                <select id="sort-select" class="input-field" style="width: auto; min-width: 130px;">
+                    <option value="deadline">Deadline Terdekat</option>
+                    <option value="prioritas">Prioritas Tertinggi</option>
+                    <option value="matkul">Abjad Matkul</option>
+                </select>
             </div>
 
             <div class="filter-row" id="filter-row">
@@ -54,17 +59,29 @@
                 <button class="filter-chip" data-filter="selesai">Selesai</button>
             </div>
 
-            <div id="task-list" class="task-list"></div>
+            <div id="list-view">
+                <div id="task-list" class="task-list"></div>
+                <div id="task-empty" class="empty-state" hidden>
+                    <div class="empty-illustration">📝</div>
+                    <h2 class="empty-title">Belum ada tugas di sini</h2>
+                    <p class="empty-desc">Yuk, catat tugas pertamamu — cukup 30 detik.</p>
+                    <button class="btn btn-primary" id="btn-empty-add">+ Tambah Tugas</button>
+                </div>
+            </div>
 
-            <div id="task-empty" class="empty-state" hidden>
-                <div class="empty-illustration">📝</div>
-                <h2 class="empty-title">Belum ada tugas di sini</h2>
-                <p class="empty-desc">Yuk, catat tugas pertamamu — cukup 30 detik.</p>
-                <button class="btn btn-primary" id="btn-empty-add">+ Tambah Tugas</button>
+            <div id="calendar-view" class="calendar-view" hidden>
+                <div class="calendar-header">
+                    <button class="btn btn-ghost" id="cal-prev">&lt;</button>
+                    <h2 class="cal-month-year" id="cal-month-year">Bulan Tahun</h2>
+                    <button class="btn btn-ghost" id="cal-next">&gt;</button>
+                </div>
+                <div class="calendar-grid-header">
+                    <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
             </div>
         </section>
 
-        <!-- ============ PAGE: MATKUL ============ -->
         <section class="page" id="page-matkul">
             <div class="page-head">
                 <div>
@@ -73,9 +90,7 @@
                 </div>
                 <button class="btn btn-primary btn-sm" id="btn-tambah-matkul">+ Tambah</button>
             </div>
-
             <div id="matkul-list" class="matkul-list"></div>
-
             <div id="matkul-empty" class="empty-state" hidden>
                 <div class="empty-illustration">📚</div>
                 <h2 class="empty-title">Belum ada mata kuliah</h2>
@@ -84,7 +99,6 @@
             </div>
         </section>
 
-        <!-- ============ PAGE: PENGATURAN ============ -->
         <section class="page" id="page-pengaturan">
             <div class="page-head">
                 <div>
@@ -98,20 +112,35 @@
                     <h2 class="card-title">Notifikasi</h2>
                     <p class="card-desc">Pastikan notifikasi diizinkan oleh sistem HP.</p>
                 </div>
-                <button class="btn btn-secondary btn-block" id="btn-test-notif">
-                    Tes Notifikasi (5 Detik)
-                </button>
+                <button type="button" class="btn btn-secondary btn-block" id="btn-test-notif">Tes Notifikasi (5 Detik)</button>
             </div>
 
+            <!-- RANGKUMAN PAGI: Layout Anti-Gagal -->
+            <div class="card">
+                <div class="card-head">
+                    <h2 class="card-title">Rangkuman Pagi</h2>
+                    <p class="card-desc">Notifikasi harian berisi daftar deadline hari ini & besok.</p>
+                </div>
+                
+                <div style="margin-top: 12px; margin-bottom: 16px;">
+                    <label class="field-label" style="margin-top:0;">Jam</label>
+                    <select id="settings-summary-hour" class="input-field" style="width: 100%; margin-bottom: 12px;"></select>
+                    
+                    <label class="field-label" style="margin-top:0;">Menit</label>
+                    <select id="settings-summary-minute" class="input-field" style="width: 100%;"></select>
+                </div>
+                
+                <!-- Gua pasang onclick langsung di sini biar pasti nangkep -->
+                <button type="button" class="btn btn-primary btn-block" id="btn-save-summary" onclick="simpanRangkumanPagi()">Simpan Rangkuman</button>
+            </div>
+                         
             <div class="card">
                 <div class="card-head">
                     <h2 class="card-title">Pengingat Default</h2>
                     <p class="card-desc">Pengingat ini dipakai untuk semua tugas baru.</p>
                 </div>
                 <div id="reminder-default-rows" class="reminder-list"></div>
-                <button class="btn btn-ghost btn-block mt-8" id="btn-tambah-reminder-default">
-                    + Tambah Pengingat
-                </button>
+                <button type="button" class="btn btn-ghost btn-block mt-8" id="btn-tambah-reminder-default">+ Tambah Pengingat</button>
             </div>
 
             <div class="card">
@@ -119,40 +148,28 @@
                     <h2 class="card-title">Cadangan Data</h2>
                     <p class="card-desc">Data tersimpan di HP-mu. Rutin cadangkan agar aman.</p>
                 </div>
-                <button class="btn btn-secondary btn-block" id="btn-export">
-                    Simpan Cadangan (.json)
-                </button>
-                <button class="btn btn-secondary btn-block" id="btn-import">
-                    Pulihkan dari Cadangan
-                </button>
+                <button type="button" class="btn btn-secondary btn-block" id="btn-export">Simpan Cadangan (.json)</button>
+                <button type="button" class="btn btn-secondary btn-block" id="btn-import">Pulihkan dari Cadangan</button>
                 <input type="file" id="file-import" accept=".json,application/json" hidden>
             </div>
 
             <div class="card">
-                <div class="card-head">
-                    <h2 class="card-title">Tentang</h2>
-                </div>
-                <div class="about-row"><span>Aplikasi</span><span class="mono">Deadline</span></div>
-                <div class="about-row"><span>Versi</span><span class="mono">1.0</span></div>
+                <div class="card-head"><h2 class="card-title">Tentang</h2></div>
+                <div class="about-row"><span>Aplikasi</span><span class="mono">Deadline v2.0</span></div>
                 <div class="about-row"><span>Data tersimpan di</span><span class="mono" id="storage-info">—</span></div>
+                <button type="button" class="btn btn-primary btn-block mt-8" id="btn-check-update" style="margin-top: 16px;">🔄 Cek Update Aplikasi</button>
             </div>
         </section>
     </main>
 
     <button class="fab" id="btn-fab" aria-label="Tambah tugas">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
 
     <nav class="bottom-nav">
-        <button class="bn-item active" data-page="tugas">
-            <span>Tugas</span>
-        </button>
-        <button class="bn-item" data-page="matkul">
-            <span>Matkul</span>
-        </button>
-        <button class="bn-item" data-page="pengaturan">
-            <span>Pengaturan</span>
-        </button>
+        <button class="bn-item active" data-page="tugas">Tugas</button>
+        <button class="bn-item" data-page="matkul">Matkul</button>
+        <button class="bn-item" data-page="pengaturan">Pengaturan</button>
     </nav>
 </div>
 
@@ -161,20 +178,46 @@
     <div class="modal">
         <div class="modal-head">
             <h2 class="modal-title" id="modal-tugas-title">Tugas Baru</h2>
-            <button class="btn-close" data-close="modal-tugas" aria-label="Tutup">×</button>
+            <button class="btn-close" data-close="modal-tugas">&times;</button>
         </div>
         <input type="hidden" id="tugas-id">
+        
         <label class="field-label">Nama Tugas</label>
         <input type="text" id="tugas-nama" class="input-field" placeholder="cth: Laporan Praktikum">
+        
         <label class="field-label">Mata Kuliah</label>
         <div class="field-with-action">
             <select id="tugas-matkul" class="input-field"><option value="">— Pilih —</option></select>
             <button class="btn-icon-soft" id="btn-quick-matkul" type="button">+</button>
         </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label class="field-label">Kategori</label>
+                <select id="tugas-kategori" class="input-field">
+                    <option value="TUGAS">Tugas</option>
+                    <option value="UJIAN">Ujian</option>
+                    <option value="PRESENTASI">Presentasi</option>
+                    <option value="PRAKTIKUM">Praktikum</option>
+                    <option value="LAINNYA">Lainnya</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Prioritas</label>
+                <select id="tugas-prioritas" class="input-field">
+                    <option value="SEDANG">Sedang</option>
+                    <option value="TINGGI">Tinggi</option>
+                    <option value="RENDAH">Rendah</option>
+                </select>
+            </div>
+        </div>
+
         <label class="field-label">Deadline</label>
         <input type="datetime-local" id="tugas-deadline" class="input-field">
+        
         <label class="field-label">Catatan / Link <span class="field-hint">(opsional)</span></label>
         <textarea id="tugas-catatan" class="input-field input-textarea" rows="2" placeholder="https://..."></textarea>
+        
         <div class="reminder-section">
             <div class="reminder-header">
                 <span class="reminder-title">Pengingat</span>
@@ -182,6 +225,7 @@
             </div>
             <label class="radio-row"><input type="radio" name="reminder-mode" value="default" checked><span>Ikuti default</span></label>
             <label class="radio-row"><input type="radio" name="reminder-mode" value="custom"><span>Atur sendiri</span></label>
+            <label class="radio-row"><input type="radio" name="reminder-mode" value="none"><span>Tanpa pengingat</span></label>
             <div class="reminder-custom" id="reminder-custom-wrap" hidden>
                 <div id="reminder-override-rows" class="reminder-list"></div>
                 <button class="btn btn-ghost btn-sm mt-4" id="btn-tambah-reminder-override" type="button">+ Tambah baris</button>
@@ -199,7 +243,7 @@
     <div class="modal">
         <div class="modal-head">
             <h2 class="modal-title" id="modal-matkul-title">Mata Kuliah Baru</h2>
-            <button class="btn-close" data-close="modal-matkul" aria-label="Tutup">×</button>
+            <button class="btn-close" data-close="modal-matkul">&times;</button>
         </div>
         <input type="hidden" id="matkul-id">
         <label class="field-label">Nama Mata Kuliah</label>
@@ -214,6 +258,24 @@
     </div>
 </div>
 
+<!-- MODAL UPDATE -->
+<div class="modal-overlay" id="modal-update" hidden>
+    <div class="modal">
+        <div class="modal-head">
+            <h2 class="modal-title">Update Tersedia!</h2>
+            <button class="btn-close" data-close="modal-update">&times;</button>
+        </div>
+        <p class="card-desc" style="margin-bottom: 12px;">Versi terbaru <strong id="update-version">v2.0.0</strong> sudah tersedia. Apa yang baru?</p>
+        <div id="update-changelog" style="background: var(--canvas); padding: 12px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; max-height: 150px; overflow-y: auto;">
+            - Perbaikan bug
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" data-close="modal-update">Nanti</button>
+            <button class="btn btn-primary" id="btn-download-update">Download & Install</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="utils.js"></script>
@@ -223,6 +285,8 @@
 <script src="tugas.js"></script>
 <script src="pengaturan.js"></script>
 <script src="backup.js"></script>
+<script src="update.js"></script>
 <script src="app.js"></script>
+
 </body>
 </html>

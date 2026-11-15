@@ -183,14 +183,14 @@ async function saveMatkulFromModal() {
     if (!nama) return showMatkulError("Nama mata kuliah wajib diisi.");
     if (nama.length > 60) return showMatkulError("Nama terlalu panjang (maks 60 karakter).");
 
-    // Cek duplikat nama (case-insensitive), kecuali diri sendiri saat edit
     var dup = MatkulState.list.find(function (m) {
-        return m.nama.toLowerCase() === nama.toLowerCase() &&
-            m.id !== MatkulState.editing;
+        return m.nama.toLowerCase() === nama.toLowerCase() && m.id !== MatkulState.editing;
     });
     if (dup) return showMatkulError("Nama mata kuliah sudah ada.");
 
     try {
+        var newMatkulId = null;
+
         if (MatkulState.editing) {
             var existing = MatkulState.list.find(function (m) { return m.id === MatkulState.editing; });
             if (!existing) return showMatkulError("Mata kuliah tidak ditemukan.");
@@ -199,6 +199,7 @@ async function saveMatkulFromModal() {
                 warna: MatkulState.selectedWarna
             });
             await saveMatkul(updated);
+            newMatkulId = updated.id;
             showToast("Mata kuliah diperbarui.", "success");
         } else {
             var baru = {
@@ -207,10 +208,27 @@ async function saveMatkulFromModal() {
                 warna: MatkulState.selectedWarna
             };
             await saveMatkul(baru);
+            newMatkulId = baru.id;
             showToast("Mata kuliah ditambahkan.", "success");
         }
+        
         closeModal("modal-matkul");
         await loadAndRenderMatkul();
+
+        // ==========================================
+        // FIX BUG: Refresh Dropdown di Modal Tugas
+        // ==========================================
+        var tugasModal = document.getElementById("modal-tugas");
+        // Jika modal Tugas sedang terbuka di belakang
+        if (tugasModal && !tugasModal.hidden) {
+            // Panggil fungsi populateMatkulDropdown dari tugas.js
+            if (typeof populateMatkulDropdown === "function") {
+                // Pilih otomatis matkul yang baru dibuat
+                await populateMatkulDropdown(newMatkulId);
+            }
+        }
+        // ==========================================
+
     } catch (e) {
         console.error("[Deadline] saveMatkul gagal:", e);
         showMatkulError("Gagal menyimpan. Coba lagi.");
