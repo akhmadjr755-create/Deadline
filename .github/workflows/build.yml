@@ -9,6 +9,10 @@ jobs:
   build:
     name: Build Debug APK
     runs-on: ubuntu-latest
+        
+        # TAMBAHKAN 2 BARIS INI
+        permissions:
+          contents: write
 
     steps:
       - name: Checkout repository
