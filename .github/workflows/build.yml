@@ -46,7 +46,6 @@ jobs:
           set +o pipefail
           yes 2>/dev/null | sdkmanager --licenses > /dev/null 2>&1 || true
           echo "License accepted (exit code ignored — might be SIGPIPE from yes)"
-          # Verifikasi
           sdkmanager --licenses < /dev/null > /dev/null 2>&1 || true
 
       - name: Install required SDK components
@@ -62,20 +61,14 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
-      - name: Redirect Gradle Download to Fast Mirror
-        run: |
-          WRAPPER_FILE="android/gradle/wrapper/gradle-wrapper.properties"
-          echo "Mengubah distributionUrl ke mirror Tencent..."
-          sed -i 's|https\\://services.gradle.org/distributions/|https\\://mirrors.cloud.tencent.com/gradle/|g' $WRAPPER_FILE
-          # Naikkan batas timeout jadi 60 detik (jaga-jaga)
-          sed -i 's|networkTimeout=10000|networkTimeout=60000|g' $WRAPPER_FILE
-          echo "--- Isi file wrapper setelah diubah ---"
-          cat $WRAPPER_FILE
-
-      - name: Patch AndroidManifest for Notifications
+      - name: Patch AndroidManifest for Notifications & Update
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />' $MANIFEST
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />' $MANIFEST
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.WAKE_LOCK" />' $MANIFEST
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />' $MANIFEST
           echo "Patch berhasil diterapkan."
 
       - name: Sync web assets to Android
@@ -86,12 +79,26 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=60000
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: deadline-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
           if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          tag_name: v${{ github.run_number }}.0.0
+          name: Release v${{ github.run_number }}.0.0
+          body: |
+            Update otomatis dari GitHub Actions.
+            Build Number: #${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
