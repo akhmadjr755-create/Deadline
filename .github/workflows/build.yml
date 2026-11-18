@@ -69,17 +69,45 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.jks
 
+      # --- BAGIAN BARU: SUNTIK GRADLE BUAT SIGNING ---
+      - name: Patch build.gradle for Release Signing
+        run: |
+          python -c '
+          file_path = "android/app/build.gradle"
+          with open(file_path, "r") as f:
+              content = f.read()
+          
+          signing_config = """
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("KEYSTORE_PATH"))
+                      storePassword System.getenv("KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("KEY_ALIAS")
+                      keyPassword System.getenv("KEY_PASSWORD")
+                  }
+              }
+          """
+          # Sisipkan konfigurasi signing
+          content = content.replace("buildTypes {", signing_config + "\n    buildTypes {")
+          # Ubah release agar pakai signing config di atas (bukan debug)
+          content = content.replace("signingConfig signingConfigs.debug", "signingConfig signingConfigs.release")
+          
+          with open(file_path, "w") as f:
+              f.write(content)
+          '
+      # ----------------------------------------------
+
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      # INI BAGIAN YANG DIPERBAIKI (JADI SATU BARIS PANJANG)
       - name: Build Release APK
         working-directory: android
         env:
-          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_PATH: ${{ github.workspace }}/android/app/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --no-daemon --stacktrace -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/release.jks -Pandroid.injected.signing.store.password="$KS_PASS" -Pandroid.injected.signing.key.alias="$KEY_ALIAS" -Pandroid.injected.signing.key.password="$KEY_PASS"
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
