@@ -69,32 +69,14 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.jks
 
-      # --- BAGIAN BARU: SUNTIK GRADLE BUAT SIGNING ---
+      # --- SUNTIK GRADLE PAKAI SED (LEBIH STABIL) ---
       - name: Patch build.gradle for Release Signing
         run: |
-          python -c '
-          file_path = "android/app/build.gradle"
-          with open(file_path, "r") as f:
-              content = f.read()
-          
-          signing_config = """
-              signingConfigs {
-                  release {
-                      storeFile file(System.getenv("KEYSTORE_PATH"))
-                      storePassword System.getenv("KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("KEY_ALIAS")
-                      keyPassword System.getenv("KEY_PASSWORD")
-                  }
-              }
-          """
-          # Sisipkan konfigurasi signing
-          content = content.replace("buildTypes {", signing_config + "\n    buildTypes {")
-          # Ubah release agar pakai signing config di atas (bukan debug)
-          content = content.replace("signingConfig signingConfigs.debug", "signingConfig signingConfigs.release")
-          
-          with open(file_path, "w") as f:
-              f.write(content)
-          '
+          GRADLE_FILE="android/app/build.gradle"
+          sed -i 's/buildTypes {/signingConfigs {\n        release {\n            storeFile file(System.getenv("KEYSTORE_PATH"))\n            storePassword System.getenv("KEYSTORE_PASSWORD")\n            keyAlias System.getenv("KEY_ALIAS")\n            keyPassword System.getenv("KEY_PASSWORD")\n        }\n    }\n    buildTypes {/' $GRADLE_FILE
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' $GRADLE_FILE
+          echo "--- HASIL PATCH GRADLE ---"
+          grep -A 10 "signingConfigs {" $GRADLE_FILE
       # ----------------------------------------------
 
       - name: Grant execute permission for gradlew
@@ -107,20 +89,24 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: |
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          echo "--- CEK FILE APK YANG DIHASILKAN ---"
+          ls -la app/build/outputs/apk/release/
 
+      # --- TARGET UPLOAD DIGANTI JADI *.apk ---
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: deadline-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
           if-no-files-found: error
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: android/app/build/outputs/apk/release/app-release.apk
+          files: android/app/build/outputs/apk/release/*.apk
           tag_name: v${{ github.run_number }}.0.0
           name: Release v${{ github.run_number }}.0.0
           body: |
